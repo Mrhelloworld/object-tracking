@@ -35,7 +35,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 	private Mat mHue;
 	private Rect touchedRect;
 	private Rect mTrackWindow;
-	CAMShiftDetection camshift;
+	private CAMShiftDetection camshift;
+	private int winWidth = 200;
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
 		public void onManagerConnected(int status) {
@@ -58,29 +59,32 @@ public class MainActivity extends Activity implements OnTouchListener,
 		mRgba = inputFrame.rgba();
 
 		if (mIsColorSelected) {
-			mHue = camshift.getHue(mRgba);// 获取hue分量
+			// 获取hsv中的hue分量
+			mHue = camshift.getHue(mRgba);
+			// 得到直方图
 			mHist = camshift.getImageHistogram(mHue, mHue.size(), 10, 0, 180);
+			// 直方图标准化
 			Core.normalize(mHist, mHist, 0, 255, Core.NORM_MINMAX);
+			// 反向投影图
 			mProbImage = camshift.getBackProjection(mHue, mHist, 0, 180, 1.0);
-
+			// 获取跟踪框并用椭圆轮廓画出来
 			mRect = Video.CamShift(mProbImage, mTrackWindow, new TermCriteria(
 					TermCriteria.COUNT, 500, 1));
-
 			Core.ellipse(mRgba, mRect, mColor);
 		}
 		if (mRect != null) {
-			int y = (int) mRect.center.y - 100;
-			int x = (int) mRect.center.x - 100;
+			int y = (int) mRect.center.y - winWidth / 2;
+			int x = (int) mRect.center.x - winWidth / 2;
 			mTrackWindow.x = x;
 			mTrackWindow.y = y;
-			mTrackWindow.width = 200;
-			mTrackWindow.height = 200;
+			mTrackWindow.width = winWidth;
+			mTrackWindow.height = winWidth;
 		}
 		return mRgba;
 	}
 
 	public void onCameraViewStarted(int width, int height) {
-		mColor = new Scalar(0, 0, 255);
+		mColor = new Scalar(0, 255, 0);
 		mTrackWindow = new Rect();
 		camshift = new CAMShiftDetection();
 	}
@@ -98,22 +102,14 @@ public class MainActivity extends Activity implements OnTouchListener,
 		if ((x < 0) || (y < 0) || (x > cols) || (y > rows))
 			return false;
 
-		touchedRect = new Rect();
-
-		touchedRect.x = x - 100;
-		touchedRect.y = y - 100;
-
-		touchedRect.width = 200;
-		touchedRect.height = 200;
-
-		mTrackWindow = touchedRect;
+		mTrackWindow = new Rect(x - winWidth / 2, y - winWidth / 2, winWidth,
+				winWidth);
 
 		mIsColorSelected = true;
 
 		return false; // don't need subsequent touch events
 	}
 
-	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -149,5 +145,4 @@ public class MainActivity extends Activity implements OnTouchListener,
 	public void onCameraViewStopped() {
 		mRgba.release();
 	}
-
 };
