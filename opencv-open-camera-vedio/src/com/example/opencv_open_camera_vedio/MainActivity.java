@@ -1,7 +1,5 @@
 package com.example.opencv_open_camera_vedio;
 
-import java.util.Arrays;
-
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -10,12 +8,10 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfInt;
 import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.TermCriteria;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.samples.colorblobdetect.R;
 import org.opencv.video.Video;
 
@@ -38,7 +34,6 @@ public class MainActivity extends Activity implements OnTouchListener,
 	private Scalar mColor;
 	private Mat mHue;
 	private Rect touchedRect;
-	private Mat WindowHsv;
 	private Rect mTrackWindow;
 	CAMShiftDetection camshift;
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -63,11 +58,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 		mRgba = inputFrame.rgba();
 
 		if (mIsColorSelected) {
-			MatOfInt fromto = new MatOfInt(0, 0);
-			Imgproc.cvtColor(mRgba, WindowHsv, Imgproc.COLOR_RGB2HSV_FULL);
-			mHue = camshift.getHue(WindowHsv);// 获取hue分量
-			Core.mixChannels(Arrays.asList(WindowHsv), Arrays.asList(mHue),
-					fromto);
+			mHue = camshift.getHue(mRgba);// 获取hue分量
 			mHist = camshift.getImageHistogram(mHue, mHue.size(), 10, 0, 180);
 			Core.normalize(mHist, mHist, 0, 255, Core.NORM_MINMAX);
 			mProbImage = camshift.getBackProjection(mHue, mHist, 0, 180, 1.0);
@@ -78,19 +69,18 @@ public class MainActivity extends Activity implements OnTouchListener,
 			Core.ellipse(mRgba, mRect, mColor);
 		}
 		if (mRect != null) {
-			int y = (int) mRect.center.y - 50;
-			int x = (int) mRect.center.x - 50;
+			int y = (int) mRect.center.y - 100;
+			int x = (int) mRect.center.x - 100;
 			mTrackWindow.x = x;
 			mTrackWindow.y = y;
-			mTrackWindow.width = 100;
-			mTrackWindow.height = 100;
+			mTrackWindow.width = 200;
+			mTrackWindow.height = 200;
 		}
 		return mRgba;
 	}
 
 	public void onCameraViewStarted(int width, int height) {
-		mColor = new Scalar(255);
-		WindowHsv = new Mat();
+		mColor = new Scalar(0, 0, 255);
 		mTrackWindow = new Rect();
 		camshift = new CAMShiftDetection();
 	}
@@ -146,7 +136,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 	@Override
 	public void onResume() {
 		super.onResume();
-		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this,
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 				mLoaderCallback);
 	}
 
